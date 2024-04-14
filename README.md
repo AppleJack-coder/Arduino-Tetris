@@ -10,9 +10,11 @@
 6) Connectors
 
 # TODO list
-1) Func to display any symbol on led matrix
-2) Func to move symbol using code and add gravity
-3) Add controls
-4) Add piling up of tetris pieces
-5) Add deletion of whole row
-6) Add death on overflow
++ 1) Func to display any symbol on led matrix
++ 2) Func to move symbol using code
+3) Func for rotation
+4) Add controls
+5) Add physics
+6) Add piling up of tetris pieces
+7) Add deletion of whole row
+8) Add death on overflow
