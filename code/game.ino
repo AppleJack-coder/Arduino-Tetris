@@ -1,5 +1,5 @@
 // Row pins of matrix
-int cathode[8] = {9,8,7,6,5,4,3,2};
+int cathode[8] = {2,3,4,5,6,7,8,9};
 
 // Buttons pins
 int buttons[3] = {A0, A1, A2};
@@ -28,7 +28,6 @@ void setup() {
     pinMode(dataPin, OUTPUT);
     pinMode(latchPin, OUTPUT);
     pinMode(clockPin, OUTPUT);
-    
     digitalWrite(latchPin, HIGH);
 
     // Setting up matrix cathode pins
@@ -37,13 +36,10 @@ void setup() {
         digitalWrite(cathode[i], HIGH);
     }
 
-    digitalWrite(latchPin, HIGH);
 }
 
 // Layer for falling block
-uint8_t blockFrame[8] = {
-	0x6,0x3,0x0,0x0,0x0,0x0,0x0,0x0,
-};
+uint8_t blockFrame[8];
 // Layer for piling blocks
 uint8_t pileFrame[8] = {
 	0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
@@ -56,15 +52,16 @@ bool dir[3];
 
 void loop()
 {
-    Serial.println(dir[0]);
+    memset(frame, 0x0, sizeof(frame));
+    memset(blockFrame, 0x0, sizeof(blockFrame));
+    int blockNumb = chooseRandomBlock();
+
+    copyFrame(blocks[blockNumb], blockFrame);
+
     readButtons();
     move(dir);
-    // for (int rowIndx=0; rowIndx<8; rowIndx++) {
-    //     Serial.println(blockFrame[rowIndx]);
-    // }
+    
     drawFrame(200);
-
-    // delay(10);
 }
 
 void readButtons() {
@@ -134,15 +131,40 @@ void move(bool dir[]) {
 
     // Down
     if (dir[2]) {
-        uint8_t tempFrame[8];
-        for (int i = 0; i < 8; i++) {
-            tempFrame[i] = blockFrame[i];
-        }
-        blockFrame[0] = 0x0;
-        for (int colIndex=1; colIndex<7; colIndex++) {
-            // Serial.println(blockFrame[colIndex]);
-            blockFrame[colIndex] = tempFrame[colIndex-1];
-            // Serial.println(blockFrame[colIndex]);
+        int size = (sizeof(blockFrame)/sizeof(*blockFrame));
+        uint8_t temp = blockFrame[size-1];
+        for (int i=size-1; i>0; --i) {
+            blockFrame[i] = blockFrame[i-1];
         } 
+        blockFrame[0] = temp;
     }
+}
+
+// Function to rotate the matrix 90 degree clockwise
+void rotate(int a[8][8]) {
+    for (int i = 0; i < 8 / 2; i++) {
+        for (int j = i; j < 8 - i - 1; j++) {
+            int temp = a[i][j];
+            a[i][j] = a[8-1-j][i];
+            a[8-1-j][i] = a[8-1-i][8-1-j];
+            a[8-1-i][8-1-j] = a[j][8-1-i];
+            a[j][8-1-i] = temp;
+        }
+    }
+}
+
+
+// Function to generate random block number
+int chooseRandomBlock() {
+    int time = millis();
+    srand(time);
+    int r;
+    r=rand()%7;
+    
+    return r;
+}
+
+// Copy 1d array
+void copyFrame(uint8_t* initFrame, uint8_t* dest) {
+    memcpy(dest, initFrame, (sizeof(initFrame)/sizeof(*initFrame)));
 }
