@@ -12,7 +12,7 @@ int latchPin = 12;
 // Blocks
 uint8_t blocks[7][8] = {
     {0x80,0xE0,0x0,0x0,0x0,0x0,0x0,0x0}, // J
-    {0xF0,0x0,0x0,0x0,0x0,0x0,0x0,0x0}, // I
+    {0xE0,0x0,0x0,0x0,0x0,0x0,0x0,0x0}, // I
     {0x20,0xE0,0x0,0x0,0x0,0x0,0x0,0x0}, // L
     {0xC0,0xC0,0x0,0x0,0x0,0x0,0x0,0x0}, // O
     {0xC0,0x60,0x0,0x0,0x0,0x0,0x0,0x0}, // S
@@ -50,19 +50,26 @@ uint8_t frame[8];
 // Movement direction
 bool dir[4] = {false,false,false,false};
 
-
+int currentBlock = 0;
 bool chooseBlock = true;
+
+
+int frameCounter = 0;
+int gravityFrameNumber = 9;
+
 
 void loop()
 { 
     if (chooseBlock) {
-      chooseRandomBlock();
-    };
+        chooseRandomBlock();
+        chooseBlock = false;
+    }
 
     readButtons();
     move(dir);
     
     drawFrame(70);
+    frameCounter++;
 }
 
 void chooseRandomBlock() {
@@ -70,13 +77,12 @@ void chooseRandomBlock() {
         frame[i] = 0x0;
         blockFrame[i] = 0x0;
     }
-    int blockNumb = randomGen();
+    currentBlock = randomGen();
 
     for (int i=0; i<(sizeof(blockFrame)/sizeof(*blockFrame)); i++) {
-        blockFrame[i] = blocks[blockNumb][i];
+        blockFrame[i] = blocks[currentBlock][i];
     }
 
-    chooseBlock = false;
 }
 
 
@@ -89,7 +95,10 @@ void readButtons() {
     }
 
     // Move down
-    if (analogRead(buttons[1]) > 512) {
+    if (frameCounter > gravityFrameNumber) {
+        dir[1] = true;
+        frameCounter = 0;
+    } else if (analogRead(buttons[1]) > 512) {
         dir[1] = true;
     } else {
         dir[1] = false;
@@ -252,12 +261,6 @@ bool checkCollision() {
     return false;
 }
 
-// Debugging function for printing bytes
-void printByte(uint8_t byte) {
-    bool bit;
-    for(int j = 0; j < 8; j++) {
-        bit = ((byte >> j) & 0x01);
-        Serial.print(bit);
     }
     Serial.println();
 }
@@ -280,8 +283,8 @@ bool checkMove(uint8_t* initFrame, uint8_t* modFrame) {
     // Check for side to side moves
     int initNnonZeroBytes = 0;
     int modNnonZeroBytes = 0;
+    bool bit;
     for (int i=0; i<8; i++) {
-        bool bit;
         for(int j = 0; j < 8; j++) {
             bit = ((initFrame[i] >> j) & 0x01);
             if (bit) {
@@ -312,6 +315,16 @@ int randomGen() {
     r=rand()%7;
     
     return r;
+}
+
+// Debugging function for printing bytes
+void printByte(uint8_t byte) {
+    bool bit;
+    for(int j = 0; j < 8; j++) {
+        bit = ((byte >> j) & 0x01);
+        Serial.print(bit);
+    }
+    Serial.println();
 }
 
 
