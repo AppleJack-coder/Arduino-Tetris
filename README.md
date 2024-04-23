@@ -14,7 +14,7 @@ Tetris game using components from popular arduino kits
 - [x] 2. Func to move symbol using code
 - [ ] 3. Func for rotation
 - [x] 4. Add constraits
-- [ ] 5. Add controls
+- [x] 5. Add controls
 - [ ] 6. Add physics
 - [x] 7. Add blocks generation
 - [x] 8. Add piling up of tetris pieces

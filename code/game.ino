@@ -2,7 +2,7 @@
 int cathode[8] = {9,8,7,6,5,4,3,2};
 
 // Buttons pins
-int buttons[3] = {A0, A1, A2};
+int buttons[4] = {A0, A1, A2, A3};
 
 // Pins for controlling shift register
 int dataPin = 10;
@@ -48,7 +48,7 @@ uint8_t pileFrame[8] = {
 uint8_t frame[8];
 
 // Movement direction
-bool dir[3] = {false,false,false};
+bool dir[4] = {false,false,false,false};
 
 
 bool chooseBlock = true;
@@ -81,22 +81,32 @@ void chooseRandomBlock() {
 
 
 void readButtons() {
+    // Move left
     if (analogRead(buttons[0]) > 512) {
-        dir[1] = true;
-    } else {
-        dir[1] = false;
-    }
-
-    if (analogRead(buttons[1]) > 512) {
         dir[0] = true;
     } else {
         dir[0] = false;
     }
 
+    // Move down
+    if (analogRead(buttons[1]) > 512) {
+        dir[1] = true;
+    } else {
+        dir[1] = false;
+    }
+
+    // Move right
     if (analogRead(buttons[2]) > 512) {
         dir[2] = true;
     } else {
         dir[2] = false;
+    }
+
+    // Rotate
+    if (analogRead(buttons[3]) > 512) {
+        dir[3] = true;
+    } else {
+        dir[3] = false;
     }
 }
 
@@ -141,12 +151,14 @@ void move(bool dir[]) {
       tempBlock[i] = blockFrame[i];
     }
 
-    // Left and right
+    // Side to side movement
     for (int rowIndx=0; rowIndx<8; rowIndx++) {
+        // Left
         if (dir[0]) {
             blockFrame[rowIndx] = blockFrame[rowIndx]<<1;
         } 
-        if (dir[1]) {
+        // Right
+        if (dir[2]) {
             blockFrame[rowIndx] = blockFrame[rowIndx]>>1;
         }
     }
@@ -157,7 +169,7 @@ void move(bool dir[]) {
     }
 
     // Down
-    if (dir[2]) {
+    if (dir[1]) {
         int size = (sizeof(blockFrame)/sizeof(*blockFrame));
         uint8_t temp = blockFrame[size-1];
         for (int i=size-1; i>0; --i) {
