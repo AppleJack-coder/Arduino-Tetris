@@ -11,7 +11,7 @@ int latchPin = 12;
 
 // Blocks
 uint8_t blocks[7][8] = {
-    {0x80,0x80,0x80,0x80,0x0,0x0,0x0,0x0}, // I
+    {0xF0,0x0,0x0,0x0,0x0,0x0,0x0,0x0}, // I
     {0x80,0xE0,0x0,0x0,0x0,0x0,0x0,0x0}, // J
     {0x20,0xE0,0x0,0x0,0x0,0x0,0x0,0x0}, // L
     {0xC0,0xC0,0x0,0x0,0x0,0x0,0x0,0x0}, // O
@@ -50,18 +50,26 @@ uint8_t frame[8];
 // Movement direction
 bool dir[3];
 
+
+bool chooseBlock = true;
+
 void loop()
 {
-    memset(frame, 0x0, sizeof(frame));
-    memset(blockFrame, 0x0, sizeof(blockFrame));
-    int blockNumb = chooseRandomBlock();
+    if (chooseBlock) {
+        memset(frame, 0x0, sizeof(frame));
+        memset(blockFrame, 0x0, sizeof(blockFrame));
+        int blockNumb = chooseRandomBlock();
 
-    copyFrame(blocks[blockNumb], blockFrame);
+        copyFrame(blocks[blockNumb], blockFrame);
+
+        chooseBlock = false;
+    }
+    
 
     readButtons();
     move(dir);
     
-    drawFrame(200);
+    drawFrame(70);
 }
 
 void readButtons() {
@@ -106,6 +114,10 @@ void drawFrame(int t) {
     }
 }
 
+void convertFrame() {
+    
+}
+
 // Function for merging blockFrame and pileFrame
 void mergeFrames() {
     for (int i=0; i<8; i++) {
@@ -119,6 +131,9 @@ void mergeFrames() {
 
 // TODO: change so it would just set piece in needed coordinates, not move it around
 void move(bool dir[]) {
+    uint8_t tempBlock[8];
+    copyFrame(blockFrame, tempBlock);
+
     // Left and right
     for (int rowIndx=0; rowIndx<8; rowIndx++) {
         if (dir[0]) {
@@ -138,6 +153,15 @@ void move(bool dir[]) {
         } 
         blockFrame[0] = temp;
     }
+
+    if (checkMove(blockFrame, tempBlock)) {
+        
+    } else {
+        for (int i=0; i<(sizeof(tempBlock)/sizeof(*tempBlock)); i++) {
+            blockFrame[i] = tempBlock[i];
+        } 
+    }
+    
 }
 
 // Function to rotate the matrix 90 degree clockwise
@@ -153,6 +177,26 @@ void rotate(int a[8][8]) {
     }
 }
 
+// Check for legality of a move
+bool checkMove(uint8_t* initFrame, uint8_t* modFrame) {
+    // Check for side to side moves
+    int initNnonZeroBytes = 0;
+    int modNnonZeroBytes = 0;
+    for (int i=0; i<8; i++) {
+        if (initFrame[i] > 0x0) {
+            initNnonZeroBytes++;
+        }
+        if (modFrame[i] > 0x0) {
+            modNnonZeroBytes++;
+        }
+    }
+
+    if (initNnonZeroBytes != modNnonZeroBytes) {
+        return false;
+    }
+
+    return true;
+}
 
 // Function to generate random block number
 int chooseRandomBlock() {
