@@ -262,8 +262,6 @@ bool checkCollision() {
 }
 
     }
-    Serial.println();
-}
 
 // Function to rotate the matrix 90 degree clockwise
 void rotate(int a[8][8]) {
