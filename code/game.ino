@@ -55,6 +55,7 @@ bool chooseBlock = true;
 
 
 int frameCounter = 0;
+int blockLiveTime = 0;
 int gravityFrameNumber = 9;
 
 
@@ -70,6 +71,7 @@ void loop()
     
     drawFrame(70);
     frameCounter++;
+    blockLiveTime++;
 }
 
 void chooseRandomBlock() {
@@ -192,8 +194,12 @@ void move(bool dir[]) {
         for (int i=0; i<(sizeof(tempBlock)/sizeof(*tempBlock)); i++) {
             blockFrame[i] = tempBlock[i];
         }
-        moveBlock2Pile();
-        chooseRandomBlock();
+        if (blockLiveTime<2) {
+            gameOver();
+        } else {
+            moveBlock2Pile();
+            chooseRandomBlock();
+        }
     } else {
         // Check if block hit pile
         if (checkBottom()) {
@@ -204,6 +210,17 @@ void move(bool dir[]) {
     }
     
 }
+
+// Blocks overflow function
+void gameOver() {
+    frameCounter = 0;
+    blockLiveTime = 0;
+    for (int i=0; i<8; i++) {
+        pileFrame[i] = 0x0;
+    }
+    chooseBlock = true;
+}
+
 
 // Check for hitting a bottom layer
 bool checkBottom() {
@@ -235,6 +252,7 @@ void moveBlock2Pile() {
         pileFrame[i] = byte;
         blockFrame[i] = 0x0;
     }
+    blockLiveTime = 0;
 }
 
 bool checkCollision() {
