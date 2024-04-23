@@ -261,18 +261,38 @@ bool checkCollision() {
     return false;
 }
 
+// Rotate block
+void rotateBlock() {
+    bool tempBlock[8][8];
+    for (int i=0; i<8; i++) {
+        for(int j = 0; j < 8; j++) {
+            tempBlock[i][j] = ((blockFrame[i] >> j) & 0x01);
+        }
     }
 
-// Function to rotate the matrix 90 degree clockwise
-void rotate(int a[8][8]) {
+    //  Rotate 2d matrix 90 degree clockwise
     for (int i = 0; i < 8 / 2; i++) {
         for (int j = i; j < 8 - i - 1; j++) {
-            int temp = a[i][j];
-            a[i][j] = a[8-1-j][i];
-            a[8-1-j][i] = a[8-1-i][8-1-j];
-            a[8-1-i][8-1-j] = a[j][8-1-i];
-            a[j][8-1-i] = temp;
+            int temp = tempBlock[i][j];
+            tempBlock[i][j] = tempBlock[8-1-j][i];
+            tempBlock[8-1-j][i] = tempBlock[8-1-i][8-1-j];
+            tempBlock[8-1-i][8-1-j] = tempBlock[j][8-1-i];
+            tempBlock[j][8-1-i] = temp;
         }
+    }
+
+    uint8_t byte;
+    for (int i=0; i<8; i++) {
+        uint8_t byte = 0x0;
+
+        for(int j = 0; j < 8; j++) {
+            byte+=tempBlock[i][j];
+            if (j!=7) {
+              byte<<=1;
+            }
+        }
+        byte = reverse_byte(byte);
+        blockFrame[i] = byte;
     }
 }
 
