@@ -167,19 +167,26 @@ void move(bool dir[]) {
     }
 
     // Check if block hit bottom
-    if (checkBottom(blockFrame)) {
+    if (checkCollision()) {
+        for (int i=0; i<(sizeof(tempBlock)/sizeof(*tempBlock)); i++) {
+            blockFrame[i] = tempBlock[i];
+        }
         moveBlock2Pile();
         chooseRandomBlock();
     } else {
         // Check if block hit pile
-        
+        if (checkBottom()) {
+            moveBlock2Pile();
+            chooseRandomBlock();
+        }
+
     }
     
 }
 
 // Check for hitting a bottom layer
-bool checkBottom(uint8_t* initFrame) {
-    if (initFrame[7] != 0x0) {
+bool checkBottom() {
+    if (blockFrame[7] != 0x0) {
         return true;
     }
     return false;
@@ -207,6 +214,30 @@ void moveBlock2Pile() {
         pileFrame[i] = byte;
         blockFrame[i] = 0x0;
     }
+}
+
+bool checkCollision() {
+    for (int i=0; i<sizeof(pileFrame)/sizeof(*pileFrame); i++) {
+        uint8_t pileBit;
+        uint8_t blockBit;
+        uint8_t byte = 0x0;
+
+        for(int j = 0; j < 8; j++) {
+            pileBit = ((pileFrame[i] >> j) & 0x01);
+            blockBit = ((blockFrame[i] >> j) & 0x01);
+
+            byte+=(pileBit*blockBit);
+            if (j!=7) {
+              byte<<=1;
+            }
+        }
+
+        if (byte != 0x0) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // Debugging function for printing bytes
