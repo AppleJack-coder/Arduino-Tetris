@@ -1,5 +1,5 @@
 // Row pins of matrix
-int cathode[8] = {2,3,4,5,6,7,8,9};
+int cathode[8] = {9,8,7,6,5,4,3,2};
 
 // Buttons pins
 int buttons[3] = {A0, A1, A2};
@@ -48,29 +48,37 @@ uint8_t pileFrame[8] = {
 uint8_t frame[8];
 
 // Movement direction
-bool dir[3];
+bool dir[3] = {false,false,false};
 
 
 bool chooseBlock = true;
 
 void loop()
-{
-    if (chooseBlock) {
-        memset(frame, 0x0, sizeof(frame));
-        memset(blockFrame, 0x0, sizeof(blockFrame));
-        int blockNumb = chooseRandomBlock();
-
-        copyFrame(blocks[blockNumb], blockFrame);
-
-        chooseBlock = false;
-    }
-    
+{ 
+    chooseRandomBlock();
 
     readButtons();
     move(dir);
     
     drawFrame(70);
 }
+
+void chooseRandomBlock() {
+    if (chooseBlock) {
+        for (int i=0; i<(sizeof(frame)/sizeof(*frame)); i++) {
+            frame[i] = 0x0;
+            blockFrame[i] = 0x0;
+        }
+        int blockNumb = randomGen();
+
+        for (int i=0; i<(sizeof(blockFrame)/sizeof(*blockFrame)); i++) {
+            blockFrame[i] = blocks[blockNumb][i];
+        }
+
+        chooseBlock = false;
+    }
+}
+
 
 void readButtons() {
     if (analogRead(buttons[0]) > 512) {
@@ -114,10 +122,6 @@ void drawFrame(int t) {
     }
 }
 
-void convertFrame() {
-    
-}
-
 // Function for merging blockFrame and pileFrame
 void mergeFrames() {
     for (int i=0; i<8; i++) {
@@ -132,7 +136,9 @@ void mergeFrames() {
 // TODO: change so it would just set piece in needed coordinates, not move it around
 void move(bool dir[]) {
     uint8_t tempBlock[8];
-    copyFrame(blockFrame, tempBlock);
+    for (int i=0; i<(sizeof(blockFrame)/sizeof(*blockFrame)); i++) {
+      tempBlock[i] = blockFrame[i];
+    }
 
     // Left and right
     for (int rowIndx=0; rowIndx<8; rowIndx++) {
@@ -142,6 +148,16 @@ void move(bool dir[]) {
         if (dir[1]) {
             blockFrame[rowIndx] = blockFrame[rowIndx]>>1;
         }
+    }
+    if (!checkMove(blockFrame, tempBlock)) {
+        for (int i=0; i<(sizeof(tempBlock)/sizeof(*tempBlock)); i++) {
+            blockFrame[i] = tempBlock[i];
+        } 
+    }
+    
+
+    for (int i=0; i<(sizeof(blockFrame)/sizeof(*blockFrame)); i++) {
+      tempBlock[i] = blockFrame[i];
     }
 
     // Down
@@ -153,10 +169,7 @@ void move(bool dir[]) {
         } 
         blockFrame[0] = temp;
     }
-
-    if (checkMove(blockFrame, tempBlock)) {
-        
-    } else {
+    if (!checkMove(blockFrame, tempBlock)) {
         for (int i=0; i<(sizeof(tempBlock)/sizeof(*tempBlock)); i++) {
             blockFrame[i] = tempBlock[i];
         } 
@@ -183,11 +196,19 @@ bool checkMove(uint8_t* initFrame, uint8_t* modFrame) {
     int initNnonZeroBytes = 0;
     int modNnonZeroBytes = 0;
     for (int i=0; i<8; i++) {
-        if (initFrame[i] > 0x0) {
-            initNnonZeroBytes++;
+        bool bit;
+        for(int j = 0; j < 8; j++) {
+            bit = ((initFrame[i] >> j) & 0x01);
+            if (bit) {
+              initNnonZeroBytes++;
+            }
         }
-        if (modFrame[i] > 0x0) {
-            modNnonZeroBytes++;
+
+        for(int j = 0; j < 8; j++) {
+            bit = ((modFrame[i] >> j) & 0x01);
+            if (bit) {
+              modNnonZeroBytes++;
+            }
         }
     }
 
@@ -199,16 +220,11 @@ bool checkMove(uint8_t* initFrame, uint8_t* modFrame) {
 }
 
 // Function to generate random block number
-int chooseRandomBlock() {
+int randomGen() {
     int time = millis();
     srand(time);
     int r;
     r=rand()%7;
     
     return r;
-}
-
-// Copy 1d array
-void copyFrame(uint8_t* initFrame, uint8_t* dest) {
-    memcpy(dest, initFrame, (sizeof(initFrame)/sizeof(*initFrame)));
 }
