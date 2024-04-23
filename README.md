@@ -13,7 +13,7 @@ Tetris game using components from popular arduino kits
 - [x] 1. Func to display any symbol on led matrix
 - [x] 2. Func to move symbol using code
 - [ ] 3. Func for rotation
-- [ ] 4. Add constraits
+- [x] 4. Add constraits
 - [ ] 5. Add controls
 - [ ] 6. Add physics
 - [x] 7. Add blocks generation
