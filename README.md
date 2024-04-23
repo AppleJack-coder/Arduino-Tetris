@@ -20,3 +20,4 @@ Tetris game using components from popular arduino kits
 - [ ] 8. Add piling up of tetris pieces
 - [ ] 9. Add deletion of whole row
 - [ ] 10. Add death on overflow
+- [ ] 11. Count bits using lookup table
