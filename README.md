@@ -52,4 +52,4 @@ Optional:
 - [ ] 12. Add starting screen and finish score
 - [ ] 13. Count bits using lookup table
 - [ ] 14. Fix bug with random block generator
-- [ ] 15. Not all blocks are falling when row is deleted
+- [ ] 15. Refactor code to be able to use bigger matrix
