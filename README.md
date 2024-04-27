@@ -37,6 +37,7 @@ Optional:
 ![Breadboard with IR remote](https://github.com/AppleJack-coder/Arduino-Tetris/blob/main/schematics/breadboard_with_IR_remote.jpg)
 
 # TODO list
+- [ ] 0. Rewrite code so it would be more readable
 - [x] 1. Func to display any symbol on led matrix
 - [x] 2. Func to move symbol using code
 - [ ] 3. Func for rotation

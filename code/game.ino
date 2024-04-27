@@ -1,42 +1,34 @@
+#include <IRremote.h>
+
+// Remote buttons map {left, down, right, rotate}
+uint8_t remoteMap[4] = {9,21,7,67};
+int remotePin = A0;
+// Buttons pins
+int buttons[4] = {A2, A1, A0, A3};
+
 // Row pins of matrix
 int cathode[8] = {9,8,7,6,5,4,3,2};
 
-// Buttons pins
-int buttons[4] = {A0, A1, A2, A3};
-
 // Pins for controlling shift register
-int dataPin = 10;
-int clockPin = 11;
+int dataPin = 11;
 int latchPin = 12;
+int clockPin = 13;
 
 // Blocks
 uint8_t blocks[7][8] = {
-    {0x80,0xE0,0x0,0x0,0x0,0x0,0x0,0x0}, // J
-    {0xE0,0x0,0x0,0x0,0x0,0x0,0x0,0x0}, // I
-    {0x20,0xE0,0x0,0x0,0x0,0x0,0x0,0x0}, // L
-    {0xC0,0xC0,0x0,0x0,0x0,0x0,0x0,0x0}, // O
-    {0xC0,0x60,0x0,0x0,0x0,0x0,0x0,0x0}, // S
-    {0x40,0xE0,0x0,0x0,0x0,0x0,0x0,0x0}, // T
-    {0xC0,0x60,0x0,0x0,0x0,0x0,0x0,0x0} // Z
+    {0x20,0x38,0x0,0x0,0x0,0x0,0x0,0x0}, // J
+    {0x3C,0x0,0x0,0x0,0x0,0x0,0x0,0x0}, // I
+    {0x8,0x38,0x0,0x0,0x0,0x0,0x0,0x0}, // L
+    {0x18,0x18,0x0,0x0,0x0,0x0,0x0,0x0}, // O
+    {0x18,0x30,0x0,0x0,0x0,0x0,0x0,0x0}, // S
+    {0x10,0x38,0x0,0x0,0x0,0x0,0x0,0x0}, // T
+    {0x30,0x18,0x0,0x0,0x0,0x0,0x0,0x0} // Z
 };
 
-
-void setup() {
-    Serial.begin(9600);
-
-    // Setting up register pins
-    pinMode(dataPin, OUTPUT);
-    pinMode(latchPin, OUTPUT);
-    pinMode(clockPin, OUTPUT);
-    digitalWrite(latchPin, HIGH);
-
-    // Setting up matrix cathode pins
-    for (int i = 0; i < (sizeof(cathode)/sizeof(*cathode)); i++) {
-        pinMode(cathode[i], OUTPUT);
-        digitalWrite(cathode[i], HIGH);
-    }
-
-}
+// Starting screen
+uint8_t startScreen[8] = {
+    0xC,0x1C,0x3C,0x7C,0x7C,0x3C,0x1C,0xC
+};
 
 // Layer for falling block
 uint8_t blockFrame[8];
@@ -56,22 +48,133 @@ bool chooseBlock = true;
 
 int frameCounter = 0;
 int blockLiveTime = 0;
-int gravityFrameNumber = 9;
+int gravityFrameNumber = 8;
+
+
+int gameState = 0;
+
+// Control mode (0 - IR remote, 1 - buttons)
+int controlMode = 0;
+
+
+void setup() {
+    Serial.begin(9600);
+
+    // Setting up register pins
+    pinMode(dataPin, OUTPUT);
+    pinMode(latchPin, OUTPUT);
+    pinMode(clockPin, OUTPUT);
+    digitalWrite(latchPin, HIGH);
+
+    // Setting up matrix cathode pins
+    for (int i = 0; i < (sizeof(cathode)/sizeof(*cathode)); i++) {
+        pinMode(cathode[i], OUTPUT);
+        digitalWrite(cathode[i], HIGH);
+    }
+
+    // Checking control mode
+    checkControlMode();
+
+    if (controlMode == 0) {
+        pinMode(remotePin, INPUT);
+        IrReceiver.begin(remotePin, true, A5);
+    }
+
+}
 
 
 void loop()
-{ 
-    if (chooseBlock) {
-        chooseRandomBlock();
-        chooseBlock = false;
+{
+    // Checking game state and displaying proper screen
+    switch (gameState) {
+        case 0:
+            displayStartScreen();
+            readControls();
+            if (dir[1]) {
+                gameState = 1;
+            }
+            break;
+        case 2:
+            // TODO: change to final score screen
+            displayStartScreen();
+            readControls();
+            if (dir[1]) {
+                gameState = 1;
+            }
+            break;
+        default:
+            break;
     }
 
-    readButtons();
-    move(dir);
-    
-    drawFrame(70);
-    frameCounter++;
-    blockLiveTime++;
+
+    if (gameState == 1) {
+        // Choosing first random block
+        if (chooseBlock) {
+            chooseRandomBlock();
+            chooseBlock = false;
+        }
+
+        // Reading remote and moving block
+        readControls();
+        move(dir);
+        
+        // Redrawing frame
+        drawFrame(60);
+
+        // Checking if any rows can be deleted
+        checkCompleteRows();
+
+        frameCounter++;
+        blockLiveTime++;
+    }
+}
+
+// Checking if buttons are present or controls are 
+// via IR remote
+void checkControlMode() {
+    for (int i=0; i<4; i++) {
+        if (analogRead(buttons[i]) != 0) {
+            controlMode = 0;
+            return;
+        }
+    }
+    controlMode = 1;
+    return;
+}
+
+// Display start screen
+// TODO: Move to drawFrame function
+void displayStartScreen() {
+    int timePassed = 0;
+    while (timePassed < 60) {
+        for (int i=0; i<9; i++) {
+            digitalWrite(cathode[i-1], HIGH);
+            if (i == 8) {
+              break;
+            }
+            digitalWrite(latchPin, LOW);
+            shiftOut(dataPin, clockPin, MSBFIRST, startScreen[i]);  
+            digitalWrite(latchPin, HIGH);
+            digitalWrite(cathode[i], LOW);
+        }
+        timePassed++;
+    }
+}
+
+// Check if any rows are complete and remove them
+void checkCompleteRows() {
+    int i=0;
+    for (i; i<8; i++) {
+        if (pileFrame[i] == 0xFF) {
+            for (int j=7; j>0; --j) {
+                if (j <= i) {
+                    pileFrame[j] = pileFrame[j-1];
+                }
+            }
+            pileFrame[0] = 0x0;
+            return checkCompleteRows();
+        }
+    }
 }
 
 void chooseRandomBlock() {
@@ -87,34 +190,54 @@ void chooseRandomBlock() {
 
 }
 
+// Controls
+void readControls() {
+    // Read buttons
+    uint8_t remoteButton = 0;
+    uint8_t pushButton[4];
+    if (controlMode == 0) {
+        if (IrReceiver.decode()) {
+            remoteButton = IrReceiver.decodedIRData.command;
+            IrReceiver.resume();
+        }
+    } else {
+        for (int i=0; i<4; i++) {
+            if (analogRead(buttons[i]) > 512) {
+                pushButton[i] = true;
+            } else {
+                pushButton[i] = false;
+            }
+        }
+    }
 
-void readButtons() {
     // Move left
-    if (analogRead(buttons[0]) > 512) {
+    if (remoteButton == remoteMap[0] or pushButton[0]) {
         dir[0] = true;
     } else {
         dir[0] = false;
     }
 
     // Move down
+    // on button press and
+    // if it's time to move down
     if (frameCounter > gravityFrameNumber) {
         dir[1] = true;
         frameCounter = 0;
-    } else if (analogRead(buttons[1]) > 512) {
+    } else if (remoteButton == remoteMap[1] or pushButton[1]) {
         dir[1] = true;
     } else {
         dir[1] = false;
     }
 
     // Move right
-    if (analogRead(buttons[2]) > 512) {
+    if (remoteButton == remoteMap[2] or pushButton[2]) {
         dir[2] = true;
     } else {
         dir[2] = false;
     }
 
     // Rotate
-    if (analogRead(buttons[3]) > 512) {
+    if (remoteButton == remoteMap[3] or pushButton[3]) {
         dir[3] = true;
     } else {
         dir[3] = false;
@@ -127,18 +250,17 @@ void drawFrame(int t) {
     mergeFrames();
     int timePassed = 0;
     while (timePassed < t) {
-        for (int i=0; i<(sizeof(cathode)/sizeof(*cathode)); i++) {
-            if (i != 0){
-                digitalWrite(cathode[i-1], HIGH);
-            } else {
-                digitalWrite(cathode[7], HIGH);
-            };
+        for (int i=0; i<9; i++) {
+            digitalWrite(cathode[i-1], HIGH);
+            if (i == 8) {
+              break;
+            }
             digitalWrite(latchPin, LOW);
             shiftOut(dataPin, clockPin, MSBFIRST, frame[i]);  
             digitalWrite(latchPin, HIGH);
             digitalWrite(cathode[i], LOW);
         }
-        delay(1);
+        // delay(.001);
         timePassed++;
     }
 }
@@ -155,11 +277,16 @@ void mergeFrames() {
 // False, False, False : left, right, down
 
 // TODO: change so it would just set piece in needed coordinates, not move it around
-void move(bool dir[]) {
+bool move(bool dir[]) {
     // Saving current blockFrame
     uint8_t tempBlock[8];
     for (int i=0; i<(sizeof(blockFrame)/sizeof(*blockFrame)); i++) {
       tempBlock[i] = blockFrame[i];
+    }
+
+    // Rotating
+    if (dir[3]) {
+        rotateBlock();
     }
 
     // Side to side movement
@@ -196,18 +323,23 @@ void move(bool dir[]) {
         }
         if (blockLiveTime<2) {
             gameOver();
+            return false;
         } else {
             moveBlock2Pile();
             chooseRandomBlock();
+            return false;
         }
     } else {
         // Check if block hit pile
         if (checkBottom()) {
             moveBlock2Pile();
             chooseRandomBlock();
+            return false;
         }
 
     }
+
+    return true;
     
 }
 
@@ -219,6 +351,7 @@ void gameOver() {
         pileFrame[i] = 0x0;
     }
     chooseBlock = true;
+    gameState = 2;
 }
 
 
@@ -364,6 +497,7 @@ void printByte(uint8_t byte) {
 }
 
 
+// Lookup table for reversing byte
 unsigned char reverse_byte(unsigned char x)
 {
     static const unsigned char table[] = {
