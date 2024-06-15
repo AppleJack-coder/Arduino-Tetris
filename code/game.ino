@@ -194,7 +194,7 @@ void chooseRandomBlock() {
 void readControls() {
     // Read buttons
     uint8_t remoteButton = 0;
-    uint8_t pushButton[4];
+    uint8_t pushButton[4] = {false, false, false, false};
     if (controlMode == 0) {
         if (IrReceiver.decode()) {
             remoteButton = IrReceiver.decodedIRData.command;
@@ -274,7 +274,7 @@ void mergeFrames() {
 
 
 // Function to move image
-// False, False, False : left, right, down
+// {left, down, right, rotate}
 
 // TODO: change so it would just set piece in needed coordinates, not move it around
 bool move(bool dir[]) {
